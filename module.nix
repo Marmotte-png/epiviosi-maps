@@ -23,7 +23,17 @@ let
   # si la partition est là, sinon c'est un dossier ordinaire (carte du monde
   # simplifiée seulement).
   launcher = pkgs.writeShellScriptBin "epiviosi-maps" ''
-    PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.util-linux ]}:$PATH
+    PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.util-linux pkgs.gnugrep ]}:$PATH
+
+    # Session amnésique : sans cela, la licence et l'écran de bienvenue
+    # reviendraient à chaque démarrage.
+    conf="''${XDG_CONFIG_HOME:-$HOME/.config}/OMaps/settings.ini"
+    mkdir -p "$(dirname "$conf")"
+    touch "$conf"
+    for kv in EulaAccepted=true ShowWelcome=false; do
+      grep -q "^''${kv%%=*}=" "$conf" || echo "$kv" >> "$conf"
+    done
+
     data="''${XDG_DATA_HOME:-$HOME/.local/share}/OMaps"
     if mountpoint -q /maps && [ -w /maps ]; then
       mkdir -p /maps/organicmaps
