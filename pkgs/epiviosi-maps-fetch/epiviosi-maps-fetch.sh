@@ -7,7 +7,8 @@
 #   RÉGION    : identifiant Organic Maps, ex. France, France_Corsica, Belgium,
 #               Germany. Sans RÉGION : la sélection EPIVÍOSI (France).
 #   --list    : liste les pays, ou les sous-régions d'une RÉGION, avec leur taille.
-#   --dest    : dossier de destination (défaut : /maps, la partition EPIV-MAPS).
+#   --dest    : dossier de données d'Organic Maps (défaut : ~/Persistant/OrganicMaps,
+#               dans la partition de persistance EPIVIOSI-DATA).
 #   --dry-run : affiche les fichiers et tailles, sans rien télécharger.
 #
 # OM_COUNTRIES (fourni par le paquet) : countries.txt de l'Organic Maps installé.
@@ -23,7 +24,7 @@ sha1_b64() { sha1sum "$1" | cut -c1-40 | tr a-f A-F | basenc --base16 -d | base6
 [ -r "$OM_COUNTRIES" ] || die "countries.txt d'Organic Maps introuvable ($OM_COUNTRIES)."
 version="$(jq -r .v "$OM_COUNTRIES")"
 
-dest="/maps" dry=0 list=0 regions=()
+dest="$HOME/Persistant/OrganicMaps" dry=0 list=0 regions=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --dest) [ $# -ge 2 ] || die "--dest attend un dossier."; dest="$2"; shift ;;
@@ -59,8 +60,11 @@ if [ "$list" = 1 ]; then
 fi
 
 [ ${#regions[@]} -gt 0 ] || regions=("${DEFAULT[@]}")
-[ -d "$dest" ] || die "$dest n'existe pas (partition EPIV-MAPS absente ? sinon : --dest DOSSIER)."
-target="$dest/organicmaps/$version"
+if [ "$dest" = "$HOME/Persistant/OrganicMaps" ] && [ ! -d "$HOME/Persistant" ]; then
+  die "pas de persistance (~/Persistant) : lancez « sudo epiviosi-persist-setup », redémarrez, puis relancez. Sinon : --dest DOSSIER."
+fi
+[ "$dry" = 1 ] || mkdir -p "$dest" || die "impossible de créer $dest."
+target="$dest/$version"
 
 files=""
 for r in "${regions[@]}"; do

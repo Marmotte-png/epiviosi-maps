@@ -1,29 +1,27 @@
 # EPIVÍOSI MAPS : cartes OpenStreetMap hors-ligne avec Organic Maps.
 #
-# Les cartes (France ≈ 5 Go) sont trop grosses pour l'ISO : elles vivent sur
-# une partition exFAT étiquetée EPIV-MAPS (`sudo epiviosi-maps-setup`, ou
-# formatée depuis Windows, macOS, Linux), montée sur /maps, et se téléchargent
-# avec `epiviosi-maps-fetch`. Quand la partition est présente, tout le dossier
-# de données d'Organic Maps y est redirigé : cartes, favoris et traces sont
-# conservés sur la clé malgré la session amnésique.
+# Les cartes (France ≈ 5 Go) sont trop grosses pour l'ISO : elles vivent dans
+# la persistance, ~/Persistant/OrganicMaps (partition EPIVIOSI-DATA, créée par
+# `sudo epiviosi-persist-setup`), et se téléchargent avec `epiviosi-maps-fetch`.
+# Le lanceur y redirige tout le dossier de données d'Organic Maps : cartes,
+# favoris et traces sont conservés malgré la session amnésique. Sans
+# persistance, Organic Maps n'affiche que la carte du monde simplifiée.
+#
+# (Pas de partition dédiée : sur la clé, la table MBR de l'ISO n'offre que
+# 2 partitions libres, prises par le wiki et la persistance.)
 #
 # Ce module implémente l'option `epiviosi.maps.enable`, déclarée par le socle
 # EPIVÍOSI OS (modules/epiviosi-modules.nix).
 { config, lib, pkgs, ... }:
 let
   cfg = config.epiviosi.maps;
-  label = "EPIV-MAPS";
-  deviceUnit = "dev-disk-by\\x2dlabel-EPIV\\x2dMAPS.device";
-  mountUnit = "maps.mount";
-
-  epiviosi-maps-setup = pkgs.callPackage ./pkgs/epiviosi-maps-setup { };
   epiviosi-maps-fetch = pkgs.callPackage ./pkgs/epiviosi-maps-fetch { };
 
-  # Avant chaque lancement : ~/.local/share/OMaps pointe vers /maps/organicmaps
-  # si la partition est là, sinon c'est un dossier ordinaire (carte du monde
-  # simplifiée seulement).
+  # Avant chaque lancement : ~/.local/share/OMaps pointe vers
+  # ~/Persistant/OrganicMaps si la persistance est là, sinon c'est un dossier
+  # ordinaire (carte du monde simplifiée seulement).
   launcher = pkgs.writeShellScriptBin "epiviosi-maps" ''
-    PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.util-linux pkgs.gnugrep ]}:$PATH
+    PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.gnugrep ]}:$PATH
 
     # Session amnésique : sans cela, la licence et l'écran de bienvenue
     # reviendraient à chaque démarrage.
@@ -35,15 +33,16 @@ let
     done
 
     data="''${XDG_DATA_HOME:-$HOME/.local/share}/OMaps"
-    if mountpoint -q /maps && [ -w /maps ]; then
-      mkdir -p /maps/organicmaps
+    cartes="$HOME/Persistant/OrganicMaps"
+    if [ -d "$HOME/Persistant" ] && [ -w "$HOME/Persistant" ]; then
+      mkdir -p "$cartes"
       if [ ! -L "$data" ]; then
         if [ -d "$data" ]; then
-          cp -rn "$data"/. /maps/organicmaps/ 2>/dev/null || true
+          cp -rn "$data"/. "$cartes"/ 2>/dev/null || true
           rm -rf "$data"
         fi
         mkdir -p "$(dirname "$data")"
-        ln -s /maps/organicmaps "$data"
+        ln -s "$cartes" "$data"
       fi
     else
       [ -L "$data" ] && rm -f "$data"
@@ -82,38 +81,11 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
-    boot.supportedFilesystems.exfat = true;
-
-    systemd.mounts = [
-      {
-        what = "/dev/disk/by-label/${label}";
-        where = "/maps";
-        type = "exfat";
-        options = "gid=${toString config.ids.gids.users},fmask=0113,dmask=0002,noatime";
-        wantedBy = [ deviceUnit ];
-      }
-    ];
-
-    # Partition déjà présente dans l'initrd : voir epiviosi-persist-boot.
-    systemd.services.epiviosi-maps-boot = {
-      description = "Montage de la partition EPIVÍOSI MAPS présente au démarrage";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "systemd-udev-trigger.service" ];
-      serviceConfig.Type = "oneshot";
-      script = ''
-        if [ -e /dev/disk/by-label/${label} ]; then
-          systemctl start --no-block ${mountUnit}
-        fi
-      '';
-    };
-
     environment.systemPackages = [
       organicmapsData
       launcher
       desktopItem
-      epiviosi-maps-setup
       epiviosi-maps-fetch
-      pkgs.exfatprogs
     ];
   };
 }
