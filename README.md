@@ -6,22 +6,24 @@ itinéraires à pied, à vélo et en voiture, sans connexion.
 
 ## Fonctionnement
 
-- Les cartes sont trop grosses pour l'ISO : elles vivent sur une partition **exFAT** étiquetée
-  **`EPIV-MAPS`**, montée sur `/maps` dès qu'elle apparaît (au démarrage ou branchée à chaud).
-- Le lanceur **EPIVÍOSI MAPS** redirige tout le dossier de données d'Organic Maps
-  (`~/.local/share/OMaps`) vers `/maps/organicmaps` : cartes, favoris et traces sont conservés
-  sur la clé malgré la session amnésique. Sans la partition, Organic Maps n'affiche que la carte
-  du monde simplifiée.
+- Les cartes sont trop grosses pour l'ISO : elles vivent dans la **persistance**,
+  `~/Persistant/OrganicMaps` (partition ext4 `EPIVIOSI-DATA`, créée par
+  `sudo epiviosi-persist-setup`).
+- Le lanceur **EPIVÍOSI MAPS** y redirige tout le dossier de données d'Organic Maps
+  (`~/.local/share/OMaps`) : cartes, favoris et traces sont conservés malgré la session
+  amnésique. Sans persistance, Organic Maps n'affiche que la carte du monde simplifiée.
+- Pas de partition dédiée : sur une clé, la table MBR de l'ISO n'offre que 2 partitions
+  libres, prises par le wiki (`EPIV-WIKI`) et la persistance.
 - Les cartes doivent correspondre exactement à la version de l'application :
   `epiviosi-maps-fetch` lit la liste des régions (`countries.txt`) de l'Organic Maps installé et
   télécharge la bonne version.
+- La licence et l'écran de bienvenue d'Organic Maps sont validés d'avance.
 
-## Préparer une clé
+## Télécharger des cartes
 
-Dans EPIVÍOSI, sur la clé de démarrage, avec une connexion :
+Dans EPIVÍOSI, avec la persistance active et une connexion :
 
 ```sh
-sudo epiviosi-maps-setup --size 8G      # partition EPIV-MAPS (sans --size : tout l'espace libre)
 epiviosi-maps-fetch                     # cartes de la France (≈ 4,9 Go, outre-mer compris)
 ```
 
@@ -34,6 +36,7 @@ epiviosi-maps-fetch --list France               # les régions françaises
 epiviosi-maps-fetch Belgium Switzerland         # ajouter des pays
 epiviosi-maps-fetch "France_Ile-de-France"      # une seule région
 epiviosi-maps-fetch --dry-run Germany           # taille, sans télécharger
+epiviosi-maps-fetch --dest DOSSIER France       # ailleurs que dans la persistance
 ```
 
 | Zone | Taille approx. (données 2026-05) |
@@ -43,9 +46,6 @@ epiviosi-maps-fetch --dry-run Germany           # taille, sans télécharger
 | Allemagne | ≈ 4,5 Go |
 | Europe (hors Russie) | ≈ 30 Go |
 | Monde | ≈ 89 Go |
-
-Ordre conseillé sur une clé de 128 Go : `epiviosi-wiki-setup --size 75G`, puis
-`epiviosi-maps-setup --size 8G`, puis `epiviosi-persist-setup` dans l'espace restant.
 
 ## Utilisation dans un flake
 
@@ -68,16 +68,16 @@ nix flake check                      # paquets + test en VM (nécessite KVM dans
 $(nix build --no-link --print-out-paths .#checks.x86_64-linux.vm.driver)/bin/nixos-test-driver
 ```
 
-Le test monte une partition `EPIV-MAPS` à chaud, vérifie la redirection du dossier de données
-(contenu existant conservé), l'outil de téléchargement hors-ligne (`--list`, `--dry-run`), puis
-un redémarrage avec la partition présente et le retour à un dossier ordinaire sans partition.
+Le test vérifie le dossier de données ordinaire sans persistance, la redirection vers
+`~/Persistant/OrganicMaps` (contenu existant conservé), la licence et l'écran de bienvenue
+préremplis, l'outil de téléchargement hors-ligne (`--list`, `--dry-run`), puis le retour à un
+dossier ordinaire quand la persistance disparaît.
 
 ## Structure
 
 | Chemin | Rôle |
 | --- | --- |
-| `module.nix` | Module NixOS : montage, lanceur EPIVÍOSI MAPS |
-| `pkgs/epiviosi-maps-setup/` | Outil `epiviosi-maps-setup` (création de la partition) |
+| `module.nix` | Module NixOS : lanceur EPIVÍOSI MAPS (redirection vers la persistance) |
 | `pkgs/epiviosi-maps-fetch/` | Outil `epiviosi-maps-fetch` (téléchargement vérifié des cartes) |
 | `tests/maps.nix` | Test NixOS en VM |
 

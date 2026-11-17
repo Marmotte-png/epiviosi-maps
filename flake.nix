@@ -16,15 +16,13 @@
       nixosModules.default = import ./module.nix;
 
       packages.${system} = {
-        epiviosi-maps-setup = pkgs.callPackage ./pkgs/epiviosi-maps-setup { };
         epiviosi-maps-fetch = pkgs.callPackage ./pkgs/epiviosi-maps-fetch { };
         default = self.packages.${system}.epiviosi-maps-fetch;
       };
 
       checks.${system} = {
-        epiviosi-maps-setup = self.packages.${system}.epiviosi-maps-setup;
         epiviosi-maps-fetch = self.packages.${system}.epiviosi-maps-fetch;
-        # Test en VM : montage à chaud, redirection des données, redémarrage.
+        # Test en VM : redirection des données vers la persistance, outil hors-ligne.
         vm = import ./tests/maps.nix {
           inherit pkgs;
           module = self.nixosModules.default;
