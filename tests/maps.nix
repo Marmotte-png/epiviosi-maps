@@ -39,6 +39,11 @@ pkgs.testers.runNixOSTest {
         as_user(run_maps)
         as_user("test -d ~/.local/share/OMaps && test ! -L ~/.local/share/OMaps")
         as_user("touch ~/.local/share/OMaps/favori-test")
+        # Licence et bienvenue déjà validées, sans doublon après relance.
+        as_user(run_maps)
+        conf = as_user("cat ~/.config/OMaps/settings.ini")
+        assert conf.count("EulaAccepted=true") == 1, conf
+        assert conf.count("ShowWelcome=false") == 1, conf
 
     with subtest("partition branchée à chaud"):
         machine.succeed("mkfs.exfat -L EPIV-MAPS /dev/vdb")
