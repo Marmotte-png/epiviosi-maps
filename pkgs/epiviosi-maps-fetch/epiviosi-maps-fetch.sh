@@ -5,7 +5,8 @@
 # Usage : epiviosi-maps-fetch [--dest DOSSIER] [--dry-run] [RÉGION...]
 #         epiviosi-maps-fetch --list [RÉGION]
 #   RÉGION    : identifiant Organic Maps, ex. France, France_Corsica, Belgium,
-#               Germany. Sans RÉGION : la sélection EPIVÍOSI (France).
+#               Germany. Sans RÉGION : la sélection EPIVÍOSI (France, outre-mer
+#               compris).
 #   --list    : liste les pays, ou les sous-régions d'une RÉGION, avec leur taille.
 #   --dest    : dossier de données d'Organic Maps (défaut : ~/Persistant/OrganicMaps,
 #               dans la partition de persistance EPIVIOSI-DATA).
@@ -13,7 +14,11 @@
 #
 # OM_COUNTRIES (fourni par le paquet) : countries.txt de l'Organic Maps installé.
 
-DEFAULT=(France)
+# « France » d'Organic Maps contient la métropole, la Guyane, la Réunion,
+# Mayotte, les TAAF, la Nouvelle-Calédonie, la Polynésie et Wallis-et-Futuna,
+# mais pas les Antilles, rangées comme pays à part, ni Saint-Pierre-et-Miquelon,
+# inclus dans la carte du sud de Terre-Neuve.
+DEFAULT=(France Guadeloupe Martinique "Saint Martin" "Saint Barthelemy" Canada_Newfoundland_South)
 MIRRORS=(https://cdn.organicmaps.app/ https://cdn-us1.organicmaps.app/)
 
 die() { echo "Erreur : $*" >&2; exit 1; }
