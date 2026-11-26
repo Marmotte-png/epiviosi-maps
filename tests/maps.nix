@@ -58,6 +58,9 @@ pkgs.testers.runNixOSTest {
     with subtest("outil de téléchargement (hors-ligne)"):
         out = as_user("epiviosi-maps-fetch --dry-run")
         assert "France" in out and "Reste à télécharger" in out, out
+        # outre-mer hors de la région « France » d'Organic Maps
+        for r in ["Guadeloupe", "Martinique", "Saint Martin", "Saint Barthelemy", "Canada_Newfoundland_South"]:
+            assert r in out, (r, out)
         out = as_user("epiviosi-maps-fetch --list France")
         assert "France_Corsica" in out, out
         machine.fail("su - epiviosi -c 'epiviosi-maps-fetch --dry-run Atlantide'")

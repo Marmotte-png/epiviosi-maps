@@ -24,11 +24,18 @@ itinéraires à pied, à vélo et en voiture, sans connexion.
 Dans EPIVÍOSI, avec la persistance active et une connexion :
 
 ```sh
-epiviosi-maps-fetch                     # cartes de la France (≈ 4,9 Go, outre-mer compris)
+epiviosi-maps-fetch                     # cartes de la France (≈ 5 Go, outre-mer compris)
 ```
 
 `epiviosi-maps-fetch` vérifie l'espace libre, reprend un téléchargement interrompu (relancer la
-même commande) et vérifie la somme SHA-1 de chaque fichier. Autres usages :
+même commande) et vérifie la somme SHA-1 de chaque fichier.
+
+Sans argument, il télécharge la région « France » d'Organic Maps (métropole, Guyane, Réunion,
+Mayotte, TAAF, Nouvelle-Calédonie, Polynésie, Wallis-et-Futuna), plus ce qu'Organic Maps range
+ailleurs : `Guadeloupe`, `Martinique`, `Saint Martin`, `Saint Barthelemy`, et
+`Canada_Newfoundland_South`, qui contient Saint-Pierre-et-Miquelon.
+
+Autres usages :
 
 ```sh
 epiviosi-maps-fetch --list                      # tous les pays, avec leur taille
@@ -41,7 +48,7 @@ epiviosi-maps-fetch --dest DOSSIER France       # ailleurs que dans la persistan
 
 | Zone | Taille approx. (données 2026-05) |
 | --- | --- |
-| France (94 fichiers) | ≈ 4,9 Go |
+| France, outre-mer compris (99 fichiers) | ≈ 5 Go |
 | Belgique / Suisse | ≈ 0,6 Go chacune |
 | Allemagne | ≈ 4,5 Go |
 | Europe (hors Russie) | ≈ 30 Go |
